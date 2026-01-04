@@ -114,12 +114,24 @@
 			pose.onResults(onResults);
 
 			if (videoSource) {
-				                camera = new Camera(videoSource, {
-									onFrame: async () => { await pose.send({image: videoSource}); },
-									width: 1280,
-									height: 720
-								});				camera.start();
+				const stream = await navigator.mediaDevices.getUserMedia({
+					video: {
+						width: { ideal: 1920 },
+						height: { ideal: 1080 },
+						facingMode: 'environment'
+					},
+					audio: false
+				});
+				videoSource.srcObject = stream;
+				await videoSource.play();
+
 				isMonitoring = true;
+				const loop = async () => {
+					if (!isMonitoring) return;
+					await pose.send({ image: videoSource });
+					requestAnimationFrame(loop);
+				};
+				loop();
 			}
 		} catch (e) {
 			console.error("MediaPipe Init Error", e);
