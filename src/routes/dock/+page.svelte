@@ -305,7 +305,7 @@
 	}
 
 	.indicator.active {
-		background-color: #333; /* Soft black for active */
+		background-color: #4CAF50; /* Green for active */
 	}
 
 	main {

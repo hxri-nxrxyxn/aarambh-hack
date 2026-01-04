@@ -11,7 +11,7 @@
 
 <div class="container">
 	<header>
-		<h1>HELPOSZ_HUB</h1>
+		<h1>HELPOSZ</h1>
 		<div class="status">SYSTEM_READY</div>
 	</header>
 
