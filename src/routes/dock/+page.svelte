@@ -10,13 +10,19 @@
 	let lastFrameData = null;
 	let motionMagnitude = $state(0);
 	
+	// Sensor Data State
+	let sensorData = $state({
+		accel: { x: 0, y: 0, z: 0 },
+		gyro: { alpha: 0, beta: 0, gamma: 0 },
+		motion: 0
+	});
+
 	const MOTION_THRESHOLD = 25; // Minimum avg pixel difference to trigger
 	const SAMPLE_STEP = 4; // Sample every 4th pixel for performance
 	const PROCESS_WIDTH = 160;
 	const PROCESS_HEIGHT = 120;
-	const WEBHOOK_URL = 'https://fahim-n8n.laddu.cc'; // Ensure correct endpoint path if needed (e.g. /webhook/...)
+	const WEBHOOK_URL = 'https://fahim-n8n.laddu.cc';
 
-	// Fira Code Font Injection
 	onMount(() => {
 		const link = document.createElement('link');
 		link.href = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&display=swap';
@@ -24,24 +30,47 @@
 		document.head.appendChild(link);
 		
 		startCamera();
+		startSensors();
 	});
 
 	onDestroy(() => {
 		stopCamera();
+		stopSensors();
 	});
 
 	async function startCamera() {
-		try {
-			stream = await navigator.mediaDevices.getUserMedia({ 
-				video: { width: 640, height: 480, facingMode: 'user' } 
-			});
-			videoSource.srcObject = stream;
-			videoSource.play();
-			isMonitoring = true;
-			processFrame();
-		} catch (err) {
-			console.error("Camera error:", err);
-			// addLog("System", "Camera access denied"); // logs is $state, requires assignment or push to array if it was not state proxy
+		if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+			try {
+				// Try facingMode: 'environment' (back camera) or 'user'
+				stream = await navigator.mediaDevices.getUserMedia({ 
+					video: { 
+						width: 640, 
+						height: 480, 
+						facingMode: 'user' // Try front camera first
+					},
+					audio: false
+				});
+				videoSource.srcObject = stream;
+				videoSource.play();
+				isMonitoring = true;
+				processFrame();
+			} catch (err) {
+				console.error("Primary camera error:", err);
+				// Fallback: Try any camera without constraint
+				try {
+					stream = await navigator.mediaDevices.getUserMedia({ video: true });
+					videoSource.srcObject = stream;
+					videoSource.play();
+					isMonitoring = true;
+					processFrame();
+				} catch (e2) {
+					console.error("Fallback camera error:", e2);
+					addLog(Date.now(), "System", "Camera Access Failed");
+				}
+			}
+		} else {
+			console.error("getUserMedia not supported");
+			addLog(Date.now(), "System", "Camera API Unavailable");
 		}
 	}
 
@@ -50,6 +79,53 @@
 		if (stream) {
 			stream.getTracks().forEach(track => track.stop());
 		}
+	}
+
+	function startSensors() {
+		if (typeof window !== 'undefined' && window.DeviceMotionEvent) {
+			window.addEventListener('devicemotion', handleMotion, true);
+			window.addEventListener('deviceorientation', handleOrientation, true);
+		}
+	}
+
+	function stopSensors() {
+		if (typeof window !== 'undefined' && window.DeviceMotionEvent) {
+			window.removeEventListener('devicemotion', handleMotion, true);
+			window.removeEventListener('deviceorientation', handleOrientation, true);
+		}
+	}
+
+	function handleMotion(event) {
+		const { x, y, z } = event.accelerationIncludingGravity || { x:0, y:0, z:0 };
+		sensorData.accel = { 
+			x: (x || 0).toFixed(2), 
+			y: (y || 0).toFixed(2), 
+			z: (z || 0).toFixed(2) 
+		};
+		
+		// Simple magnitude calculation
+		const mag = Math.sqrt(x*x + y*y + z*z);
+		sensorData.motion = mag.toFixed(2);
+	}
+
+	function handleOrientation(event) {
+		sensorData.gyro = {
+			alpha: (event.alpha || 0).toFixed(1),
+			beta: (event.beta || 0).toFixed(1),
+			gamma: (event.gamma || 0).toFixed(1)
+		};
+	}
+
+	function addLog(id, type, val) {
+		const timestamp = new Date().toLocaleTimeString();
+		const logItem = {
+			id: id,
+			time: timestamp,
+			type: type || "INFO",
+			intensity: val || "N/A",
+			image: null
+		};
+		logs = [logItem, ...logs].slice(0, 50);
 	}
 
 	function processFrame() {
@@ -65,7 +141,6 @@
 			calculateMotion(currentFrame.data, lastFrameData.data);
 		}
 
-		// Store current frame for next comparison
 		lastFrameData = new ImageData(
 			new Uint8ClampedArray(currentFrame.data),
 			currentFrame.width,
@@ -110,6 +185,7 @@
 		const logItem = {
 			id: now,
 			time: timestamp,
+			type: "MOTION DETECTED",
 			intensity: intensity.toFixed(2),
 			image: snapshot
 		};
@@ -122,7 +198,8 @@
 				body: JSON.stringify({
 					event_type: "motion_alert",
 					intensity: intensity,
-					frame: snapshot
+					frame: snapshot,
+					sensors: sensorData // Include sensor data in payload
 				})
 			}).catch(err => console.error("Webhook failed", err));
 		} catch (e) {
@@ -149,20 +226,57 @@
 	</header>
 
 	<main>
+		<!-- Camera Section -->
 		<section class="camera-feed">
 			<div class="video-wrapper">
 				<!-- svelte-ignore a11y_media_has_caption -->
-				<video bind:this={videoSource} playsinline muted></video>
+				<video bind:this={videoSource} playsinline muted autoplay></video>
 				<canvas bind:this={canvasRef} width={PROCESS_WIDTH} height={PROCESS_HEIGHT} class="hidden-canvas"></canvas>
 				<div class="overlay">
 					<div class="metric">
-						<label>MAGNITUDE</label>
+						<label>VISUAL_MAG</label>
 						<span>{motionMagnitude.toFixed(1)}</span>
 					</div>
 				</div>
 			</div>
 		</section>
 
+		<!-- Sensor Data Table -->
+		<section class="sensor-panel">
+			<div class="panel-header">SENSOR_TELEMETRY</div>
+			<div class="table-wrapper">
+				<table>
+					<thead>
+						<tr>
+							<th>SENSOR</th>
+							<th>X / ALPHA</th>
+							<th>Y / BETA</th>
+							<th>Z / GAMMA</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>ACCEL</td>
+							<td>{sensorData.accel.x}</td>
+							<td>{sensorData.accel.y}</td>
+							<td>{sensorData.accel.z}</td>
+						</tr>
+						<tr>
+							<td>GYRO</td>
+							<td>{sensorData.gyro.alpha}</td>
+							<td>{sensorData.gyro.beta}</td>
+							<td>{sensorData.gyro.gamma}</td>
+						</tr>
+						<tr>
+							<td>TOTAL</td>
+							<td colspan="3">MAGNITUDE: {sensorData.motion}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</section>
+
+		<!-- Logs Section -->
 		<section class="logs-panel">
 			<div class="logs-header">
 				<h2>EVENT_LOG</h2>
@@ -171,7 +285,7 @@
 				{#each logs as log (log.id)}
 					<button class="log-item" onclick={() => selectLog(log)}>
 						<span class="time">{log.time}</span>
-						<span class="type">MOTION DETECTED</span>
+						<span class="type">{log.type}</span>
 						<span class="value">INT: {log.intensity}</span>
 					</button>
 				{/each}
@@ -196,9 +310,12 @@
 					<h3>EVENT_{selectedLog.id}</h3>
 					<button onclick={closeLog}>[CLOSE]</button>
 				</div>
-				<img src={selectedLog.image} alt="Capture" />
+				{#if selectedLog.image}
+					<img src={selectedLog.image} alt="Capture" />
+				{/if}
 				<div class="modal-info">
 					<p>TIME: {selectedLog.time}</p>
+					<p>TYPE: {selectedLog.type}</p>
 					<p>INTENSITY: {selectedLog.intensity}</p>
 				</div>
 			</div>
@@ -308,6 +425,44 @@
 		gap: 8px;
 	}
 
+	/* Sensor Panel */
+	.sensor-panel {
+		border: 1px solid #F0F0F0;
+		padding: 0;
+	}
+
+	.panel-header {
+		background: #F9F9F9;
+		padding: 8px 12px;
+		font-size: 0.85rem;
+		border-bottom: 1px solid #F0F0F0;
+		color: #444;
+	}
+
+	.table-wrapper {
+		padding: 10px;
+	}
+
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.8rem;
+	}
+
+	th {
+		text-align: left;
+		padding: 6px;
+		color: #888;
+		font-weight: 400;
+		border-bottom: 1px solid #EEE;
+	}
+
+	td {
+		padding: 6px;
+		color: #333;
+	}
+
+	/* Logs */
 	.logs-panel {
 		flex: 1;
 		display: flex;
