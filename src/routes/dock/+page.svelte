@@ -114,12 +114,11 @@
 			pose.onResults(onResults);
 
 			if (videoSource) {
-				camera = new Camera(videoSource, {
-					onFrame: async () => { await pose.send({image: videoSource}); },
-					width: 640,
-					height: 480
-				});
-				camera.start();
+				                camera = new Camera(videoSource, {
+									onFrame: async () => { await pose.send({image: videoSource}); },
+									width: 1280,
+									height: 720
+								});				camera.start();
 				isMonitoring = true;
 			}
 		} catch (e) {
@@ -130,6 +129,11 @@
 
 	function onResults(results) {
 		if (!canvasRef) return;
+		
+		// Dynamic resolution to prevent internal stretching
+		canvasRef.width = results.image.width;
+		canvasRef.height = results.image.height;
+
 		const ctx = canvasRef.getContext('2d');
 		ctx.save();
 		ctx.clearRect(0, 0, canvasRef.width, canvasRef.height);
@@ -382,7 +386,7 @@
 			<div class="video-wrapper">
 				<!-- svelte-ignore a11y_media_has_caption -->
 				<video bind:this={videoSource} class="hidden-video" playsinline muted autoplay></video>
-				<canvas bind:this={canvasRef} width="640" height="480"></canvas>
+				<canvas bind:this={canvasRef} width="1280" height="720"></canvas>
 				<div class="overlay">
 					<div class="metric">
 						<label>STATUS</label>
@@ -494,15 +498,15 @@
 
 	.camera-feed {
 		position: relative;
-		background-color: #F9F9F9;
-		border: 1px solid #F0F0F0;
-		padding: 10px;
+		background-color: transparent;
+		border: none;
+		padding: 0;
 	}
 
 	.video-wrapper {
 		width: 100%;
-		aspect-ratio: 4/3;
-		background: #FFFFFF;
+		aspect-ratio: 16/9;
+		background: transparent;
 		position: relative;
 		overflow: hidden;
 	}
