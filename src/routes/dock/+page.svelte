@@ -10,19 +10,13 @@
 	let lastFrameData = null;
 	let motionMagnitude = $state(0);
 	
-	// Sensor Data State
-	let sensorData = $state({
-		accel: { x: 0, y: 0, z: 0 },
-		gyro: { alpha: 0, beta: 0, gamma: 0 },
-		motion: 0
-	});
-
 	const MOTION_THRESHOLD = 25; // Minimum avg pixel difference to trigger
 	const SAMPLE_STEP = 4; // Sample every 4th pixel for performance
 	const PROCESS_WIDTH = 160;
 	const PROCESS_HEIGHT = 120;
-	const WEBHOOK_URL = 'https://fahim-n8n.laddu.cc';
+	const WEBHOOK_URL = 'https://fahim-n8n.laddu.cc'; // Ensure correct endpoint path if needed (e.g. /webhook/...)
 
+	// Fira Code Font Injection
 	onMount(() => {
 		const link = document.createElement('link');
 		link.href = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&display=swap';
@@ -30,12 +24,10 @@
 		document.head.appendChild(link);
 		
 		startCamera();
-		startSensors();
 	});
 
 	onDestroy(() => {
 		stopCamera();
-		stopSensors();
 	});
 
 	async function startCamera() {
@@ -81,41 +73,6 @@
 		}
 	}
 
-	function startSensors() {
-		if (typeof window !== 'undefined' && window.DeviceMotionEvent) {
-			window.addEventListener('devicemotion', handleMotion, true);
-			window.addEventListener('deviceorientation', handleOrientation, true);
-		}
-	}
-
-	function stopSensors() {
-		if (typeof window !== 'undefined' && window.DeviceMotionEvent) {
-			window.removeEventListener('devicemotion', handleMotion, true);
-			window.removeEventListener('deviceorientation', handleOrientation, true);
-		}
-	}
-
-	function handleMotion(event) {
-		const { x, y, z } = event.accelerationIncludingGravity || { x:0, y:0, z:0 };
-		sensorData.accel = { 
-			x: (x || 0).toFixed(2), 
-			y: (y || 0).toFixed(2), 
-			z: (z || 0).toFixed(2) 
-		};
-		
-		// Simple magnitude calculation
-		const mag = Math.sqrt(x*x + y*y + z*z);
-		sensorData.motion = mag.toFixed(2);
-	}
-
-	function handleOrientation(event) {
-		sensorData.gyro = {
-			alpha: (event.alpha || 0).toFixed(1),
-			beta: (event.beta || 0).toFixed(1),
-			gamma: (event.gamma || 0).toFixed(1)
-		};
-	}
-
 	function addLog(id, type, val) {
 		const timestamp = new Date().toLocaleTimeString();
 		const logItem = {
@@ -141,6 +98,7 @@
 			calculateMotion(currentFrame.data, lastFrameData.data);
 		}
 
+		// Store current frame for next comparison
 		lastFrameData = new ImageData(
 			new Uint8ClampedArray(currentFrame.data),
 			currentFrame.width,
@@ -154,7 +112,9 @@
 		let totalDiff = 0;
 		let pixelCount = 0;
 
+		// Loop through pixels, stepping by SAMPLE_STEP * 4 (since each pixel has r,g,b,a)
 		for (let i = 0; i < current.length; i += SAMPLE_STEP * 4) {
+			// Simple grayscale conversion or just average RGB diff
 			const rDiff = Math.abs(current[i] - previous[i]);
 			const gDiff = Math.abs(current[i+1] - previous[i+1]);
 			const bDiff = Math.abs(current[i+2] - previous[i+2]);
@@ -171,8 +131,9 @@
 		}
 	}
 
+	// Throttle alerts to avoid flooding
 	let lastAlertTime = 0;
-	const ALERT_COOLDOWN = 2000;
+	const ALERT_COOLDOWN = 2000; // 2 seconds
 
 	async function handleMotionDetected(intensity) {
 		const now = Date.now();
@@ -182,6 +143,7 @@
 		const timestamp = new Date().toLocaleTimeString();
 		const snapshot = canvasRef.toDataURL('image/jpeg', 0.7);
 
+		// Local Log
 		const logItem = {
 			id: now,
 			time: timestamp,
@@ -189,17 +151,19 @@
 			intensity: intensity.toFixed(2),
 			image: snapshot
 		};
-		logs = [logItem, ...logs].slice(0, 50);
+		logs = [logItem, ...logs].slice(0, 50); // Keep last 50
 
+		// Webhook Trigger
 		try {
+			// Using fetch with no-cors might be needed if n8n doesn't send CORS headers, 
+			// but no-cors makes the response opaque. Usually standard CORS is preferred.
 			fetch(WEBHOOK_URL, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					event_type: "motion_alert",
 					intensity: intensity,
-					frame: snapshot,
-					sensors: sensorData // Include sensor data in payload
+					frame: snapshot
 				})
 			}).catch(err => console.error("Webhook failed", err));
 		} catch (e) {
@@ -217,6 +181,7 @@
 </script>
 
 <div class="container">
+	<!-- Header -->
 	<header>
 		<h1>DOCK_MONITOR</h1>
 		<div class="status">
@@ -225,6 +190,7 @@
 		</div>
 	</header>
 
+	<!-- Main Grid -->
 	<main>
 		<!-- Camera Section -->
 		<section class="camera-feed">
@@ -234,45 +200,10 @@
 				<canvas bind:this={canvasRef} width={PROCESS_WIDTH} height={PROCESS_HEIGHT} class="hidden-canvas"></canvas>
 				<div class="overlay">
 					<div class="metric">
-						<label>VISUAL_MAG</label>
+						<label>MAGNITUDE</label>
 						<span>{motionMagnitude.toFixed(1)}</span>
 					</div>
 				</div>
-			</div>
-		</section>
-
-		<!-- Sensor Data Table -->
-		<section class="sensor-panel">
-			<div class="panel-header">SENSOR_TELEMETRY</div>
-			<div class="table-wrapper">
-				<table>
-					<thead>
-						<tr>
-							<th>SENSOR</th>
-							<th>X / ALPHA</th>
-							<th>Y / BETA</th>
-							<th>Z / GAMMA</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>ACCEL</td>
-							<td>{sensorData.accel.x}</td>
-							<td>{sensorData.accel.y}</td>
-							<td>{sensorData.accel.z}</td>
-						</tr>
-						<tr>
-							<td>GYRO</td>
-							<td>{sensorData.gyro.alpha}</td>
-							<td>{sensorData.gyro.beta}</td>
-							<td>{sensorData.gyro.gamma}</td>
-						</tr>
-						<tr>
-							<td>TOTAL</td>
-							<td colspan="3">MAGNITUDE: {sensorData.motion}</td>
-						</tr>
-					</tbody>
-				</table>
 			</div>
 		</section>
 
@@ -303,6 +234,7 @@
 		</div>
 	</main>
 
+	<!-- Detail Modal -->
 	{#if selectedLog}
 		<div class="modal-backdrop" onclick={closeLog} role="button" tabindex="0" onkeydown={(e) => e.key === 'Escape' && closeLog()}>
 			<div class="modal-content" onclick={(e) => e.stopPropagation()} role="presentation">
@@ -373,7 +305,7 @@
 	}
 
 	.indicator.active {
-		background-color: #333;
+		background-color: #333; /* Soft black for active */
 	}
 
 	main {
@@ -384,6 +316,7 @@
 		overflow: hidden;
 	}
 
+	/* Camera */
 	.camera-feed {
 		position: relative;
 		background-color: #F9F9F9;
@@ -423,43 +356,6 @@
 		font-size: 0.75rem;
 		display: flex;
 		gap: 8px;
-	}
-
-	/* Sensor Panel */
-	.sensor-panel {
-		border: 1px solid #F0F0F0;
-		padding: 0;
-	}
-
-	.panel-header {
-		background: #F9F9F9;
-		padding: 8px 12px;
-		font-size: 0.85rem;
-		border-bottom: 1px solid #F0F0F0;
-		color: #444;
-	}
-
-	.table-wrapper {
-		padding: 10px;
-	}
-
-	table {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 0.8rem;
-	}
-
-	th {
-		text-align: left;
-		padding: 6px;
-		color: #888;
-		font-weight: 400;
-		border-bottom: 1px solid #EEE;
-	}
-
-	td {
-		padding: 6px;
-		color: #333;
 	}
 
 	/* Logs */
@@ -532,43 +428,7 @@
 		font-size: 0.8rem;
 	}
 
-	.nav-container {
-		display: flex;
-		flex-direction: column;
-		gap: 15px;
-		padding: 2rem;
-		background: #FAFAFA;
-		border-top: 1px solid #F0F0F0;
-	}
-
-	.btn {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		width: 100%;
-		padding: 16px 20px;
-		font-family: inherit;
-		font-size: 0.9rem;
-		text-decoration: none;
-		cursor: pointer;
-		box-sizing: border-box;
-		transition: all 0.2s ease;
-		border: 1px solid #111;
-	}
-
-	.btn-secondary {
-		background-color: #FFF;
-		color: #111;
-	}
-
-	.btn-secondary:hover {
-		background-color: #F5F5F5;
-	}
-
-	.arrow {
-		font-weight: 300;
-	}
-
+	/* Modal */
 	.modal-backdrop {
 		position: fixed;
 		top: 0;
