@@ -1,2 +1,127 @@
-<h1>Mobile</h1>
-<p>OTG route for mobile.</p>
+<script>
+	import { onMount } from 'svelte';
+
+	onMount(() => {
+		const link = document.createElement('link');
+		link.href = 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&display=swap';
+		link.rel = 'stylesheet';
+		document.head.appendChild(link);
+	});
+</script>
+
+<div class="container">
+	<header>
+		<h1>OTG_TOOLS</h1>
+		<div class="status">CONNECTED</div>
+	</header>
+
+	<main>
+		<div class="placeholder-content">
+			<p>OTG_DEVICE_MOUNTED</p>
+			<p class="sub-text">WAITING_FOR_INPUT...</p>
+		</div>
+
+		<div class="nav-container">
+			<a href="/" class="btn btn-secondary">
+				<span class="arrow">←</span>
+				<span class="label">RETURN_TO_HUB</span>
+			</a>
+		</div>
+	</main>
+</div>
+
+<style>
+	:global(body) {
+		margin: 0;
+		background-color: #FFFFFF;
+		color: #111111;
+		font-family: 'Fira Code', monospace;
+	}
+
+	.container {
+		display: flex;
+		flex-direction: column;
+		height: 100vh;
+		max-width: 800px;
+		margin: 0 auto;
+		padding: 20px;
+		box-sizing: border-box;
+	}
+
+	header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 20px;
+		border-bottom: 1px solid #F0F0F0;
+		padding-bottom: 10px;
+	}
+
+	h1 {
+		font-size: 1.2rem;
+		font-weight: 500;
+		margin: 0;
+		letter-spacing: -0.5px;
+	}
+
+	.status {
+		font-size: 0.8rem;
+		color: #888;
+	}
+
+	main {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.placeholder-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		color: #444;
+	}
+
+	.sub-text {
+		color: #888;
+		font-size: 0.8rem;
+		margin-top: 10px;
+	}
+
+	.nav-container {
+		display: flex;
+		flex-direction: column;
+		gap: 15px;
+		padding: 2rem;
+	}
+
+	.btn {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+		padding: 16px 20px;
+		font-family: inherit;
+		font-size: 0.9rem;
+		text-decoration: none;
+		cursor: pointer;
+		box-sizing: border-box;
+		transition: all 0.2s ease;
+		border: 1px solid #111;
+	}
+
+	.btn-secondary {
+		background-color: #FFF;
+		color: #111;
+	}
+
+	.btn-secondary:hover {
+		background-color: #F5F5F5;
+	}
+
+	.arrow {
+		font-weight: 300;
+	}
+</style>

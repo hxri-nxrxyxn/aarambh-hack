@@ -41,7 +41,7 @@
 			processFrame();
 		} catch (err) {
 			console.error("Camera error:", err);
-			addLog("System", "Camera access denied");
+			// addLog("System", "Camera access denied"); // logs is $state, requires assignment or push to array if it was not state proxy
 		}
 	}
 
@@ -66,7 +66,6 @@
 		}
 
 		// Store current frame for next comparison
-		// We need to copy the data, otherwise we just reference the same buffer
 		lastFrameData = new ImageData(
 			new Uint8ClampedArray(currentFrame.data),
 			currentFrame.width,
@@ -80,9 +79,7 @@
 		let totalDiff = 0;
 		let pixelCount = 0;
 
-		// Loop through pixels, stepping by SAMPLE_STEP * 4 (since each pixel has r,g,b,a)
 		for (let i = 0; i < current.length; i += SAMPLE_STEP * 4) {
-			// Simple grayscale conversion or just average RGB diff
 			const rDiff = Math.abs(current[i] - previous[i]);
 			const gDiff = Math.abs(current[i+1] - previous[i+1]);
 			const bDiff = Math.abs(current[i+2] - previous[i+2]);
@@ -99,9 +96,8 @@
 		}
 	}
 
-	// Throttle alerts to avoid flooding
 	let lastAlertTime = 0;
-	const ALERT_COOLDOWN = 2000; // 2 seconds
+	const ALERT_COOLDOWN = 2000;
 
 	async function handleMotionDetected(intensity) {
 		const now = Date.now();
@@ -111,19 +107,15 @@
 		const timestamp = new Date().toLocaleTimeString();
 		const snapshot = canvasRef.toDataURL('image/jpeg', 0.7);
 
-		// Local Log
 		const logItem = {
 			id: now,
 			time: timestamp,
 			intensity: intensity.toFixed(2),
 			image: snapshot
 		};
-		logs = [logItem, ...logs].slice(0, 50); // Keep last 50
+		logs = [logItem, ...logs].slice(0, 50);
 
-		// Webhook Trigger
 		try {
-			// Using fetch with no-cors might be needed if n8n doesn't send CORS headers, 
-			// but no-cors makes the response opaque. Usually standard CORS is preferred.
 			fetch(WEBHOOK_URL, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -148,7 +140,6 @@
 </script>
 
 <div class="container">
-	<!-- Header -->
 	<header>
 		<h1>DOCK_MONITOR</h1>
 		<div class="status">
@@ -157,9 +148,7 @@
 		</div>
 	</header>
 
-	<!-- Main Grid -->
 	<main>
-		<!-- Camera Section -->
 		<section class="camera-feed">
 			<div class="video-wrapper">
 				<!-- svelte-ignore a11y_media_has_caption -->
@@ -174,7 +163,6 @@
 			</div>
 		</section>
 
-		<!-- Logs Section -->
 		<section class="logs-panel">
 			<div class="logs-header">
 				<h2>EVENT_LOG</h2>
@@ -192,9 +180,15 @@
 				{/if}
 			</div>
 		</section>
+
+		<div class="nav-container">
+			<a href="/" class="btn btn-secondary">
+				<span class="arrow">←</span>
+				<span class="label">RETURN_TO_HUB</span>
+			</a>
+		</div>
 	</main>
 
-	<!-- Detail Modal -->
 	{#if selectedLog}
 		<div class="modal-backdrop" onclick={closeLog} role="button" tabindex="0" onkeydown={(e) => e.key === 'Escape' && closeLog()}>
 			<div class="modal-content" onclick={(e) => e.stopPropagation()} role="presentation">
@@ -262,7 +256,7 @@
 	}
 
 	.indicator.active {
-		background-color: #333; /* Soft black for active */
+		background-color: #333;
 	}
 
 	main {
@@ -273,7 +267,6 @@
 		overflow: hidden;
 	}
 
-	/* Camera */
 	.camera-feed {
 		position: relative;
 		background-color: #F9F9F9;
@@ -315,7 +308,6 @@
 		gap: 8px;
 	}
 
-	/* Logs */
 	.logs-panel {
 		flex: 1;
 		display: flex;
@@ -385,7 +377,43 @@
 		font-size: 0.8rem;
 	}
 
-	/* Modal */
+	.nav-container {
+		display: flex;
+		flex-direction: column;
+		gap: 15px;
+		padding: 2rem;
+		background: #FAFAFA;
+		border-top: 1px solid #F0F0F0;
+	}
+
+	.btn {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+		padding: 16px 20px;
+		font-family: inherit;
+		font-size: 0.9rem;
+		text-decoration: none;
+		cursor: pointer;
+		box-sizing: border-box;
+		transition: all 0.2s ease;
+		border: 1px solid #111;
+	}
+
+	.btn-secondary {
+		background-color: #FFF;
+		color: #111;
+	}
+
+	.btn-secondary:hover {
+		background-color: #F5F5F5;
+	}
+
+	.arrow {
+		font-weight: 300;
+	}
+
 	.modal-backdrop {
 		position: fixed;
 		top: 0;
