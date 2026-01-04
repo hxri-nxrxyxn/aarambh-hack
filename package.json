@@ -26,5 +26,9 @@
 		"svelte": "^5.45.6",
 		"svelte-check": "^4.3.4",
 		"vite": "^7.2.6"
+	},
+	"dependencies": {
+		"@capacitor/cli": "^8.0.0",
+		"@capacitor/core": "^8.0.0"
 	}
 }
