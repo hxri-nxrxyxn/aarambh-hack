@@ -1,0 +1,9 @@
+{
+  "appId": "com.example.helposz",
+  "appName": "helposz",
+  "webDir": "build",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}
