@@ -327,7 +327,7 @@
 	.video-wrapper {
 		width: 100%;
 		aspect-ratio: 4/3;
-		background: #000;
+		background: #FFFFFF;
 		position: relative;
 		overflow: hidden;
 	}
@@ -358,7 +358,43 @@
 		gap: 8px;
 	}
 
-	/* Logs */
+	.nav-container {
+		margin-top: auto;
+		display: flex;
+		flex-direction: column;
+		gap: 15px;
+		padding: 2rem;
+		background: #FFFFFF;
+		border-top: 1px solid #F0F0F0;
+	}
+
+	.btn {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		width: 100%;
+		padding: 16px 20px;
+		font-family: inherit;
+		font-size: 0.9rem;
+		text-decoration: none;
+		cursor: pointer;
+		box-sizing: border-box;
+		transition: all 0.2s ease;
+		border: 1px solid #111;
+	}
+
+	.btn-secondary {
+		background-color: #FFF;
+		color: #111;
+	}
+
+	.btn-secondary:hover {
+		background-color: #F5F5F5;
+	}
+
+	.arrow {
+		font-weight: 300;
+	}
 	.logs-panel {
 		flex: 1;
 		display: flex;
