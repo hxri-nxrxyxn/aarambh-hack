@@ -93,6 +93,9 @@ This project is built using:
 - **Local Processing:** Video feeds for posture detection are processed locally on the device. No video stream is sent to the cloud.
 - **No PII:** The app does not collect personally identifiable information beyond temporary location data used strictly for the emergency function.
 
+
+## 7. Demo
+[See Demo](https://drive.google.com/drive/folders/1LMQ_zcLK-pfP35mszb8_iLJN4B50s3Ht?usp=drive_link)
 ---
 
 **Developed for Aarambh 3.0**
