@@ -3,7 +3,7 @@
 	import { Toast } from '@capacitor/toast';
 
 	// Constants
-	const WEBHOOK_URL = "http://localhost:5678/webhook/seizure-monitor";
+	const WEBHOOK_URL = "http://fahim-n8n.laddu.cc/webhook/seizure-monitor";
 	const SESSION_ID = crypto.randomUUID();
 
 	let videoSource = null;
@@ -74,8 +74,8 @@
 
 	function startFrameStream() {
 		if (frameStreamInterval) return;
-		// 1 FPS = 1000ms
-		frameStreamInterval = setInterval(sendFrame, 1000);
+		// 1500ms interval
+		frameStreamInterval = setInterval(sendFrame, 1500);
 	}
 
 	function stopFrameStream() {
