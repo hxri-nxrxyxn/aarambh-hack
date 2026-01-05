@@ -1,6 +1,10 @@
 <script>
 	import { onMount, onDestroy } from 'svelte';
 	import { KeepAwake } from '@capacitor-community/keep-awake';
+	import { VolumeControl, VolumeType } from '@odion-cloud/capacitor-volume-control';
+	import { Geolocation } from '@capacitor/geolocation';
+
+	const WEBHOOK_URL = "http://fahim-n8n.laddu.cc/webhook/seizure-monitor";
 
 	let sensorData = $state({
 		accel: { x: 0, y: 0, z: 0 },
@@ -9,8 +13,14 @@
 	});
 
 	let isAlarmActive = $state(false);
+	
+	// Audio State
 	let audioContext = null;
 	let oscillator = null;
+	let pulseInterval = null;
+	let beepTimeout = null;
+	let emergencyAudio = null;
+	let playCount = 0;
 
 	const FALL_THRESHOLD = 30; // ~3g impact
 
@@ -74,10 +84,52 @@
 		};
 	}
 
-	function triggerAlarm() {
+	async function triggerAlarm() {
 		if (isAlarmActive) return;
 		isAlarmActive = true;
+		
+		// 1. Set MAX Volume
+		try {
+			VolumeControl.setVolumeLevel({ type: VolumeType.Music, value: 1.0 });
+			VolumeControl.setVolumeLevel({ type: VolumeType.System, value: 1.0 });
+		} catch (e) {
+			console.error("Failed to set max volume", e);
+		}
+		
+		// 2. Play Alarm Sequence
 		playHighPitchSound();
+
+		// 3. Send Location Webhook
+		try {
+			// Check permissions first? Capacitor handles this usually.
+			const coordinates = await Geolocation.getCurrentPosition({
+				enableHighAccuracy: true,
+				timeout: 10000
+			});
+
+			const { latitude, longitude } = coordinates.coords;
+			const mapLink = `https://maps.google.com/?q=${latitude},${longitude}`;
+
+			// Payload
+			const payload = {
+				type: "FALL_DETECTED",
+				timestamp: new Date().toISOString(),
+				location: mapLink,
+				lat: latitude,
+				lng: longitude
+			};
+
+			// Send
+			await fetch(WEBHOOK_URL, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+			console.log("Location sent:", mapLink);
+
+		} catch (err) {
+			console.error("Geolocation/Webhook Error:", err);
+		}
 	}
 
 	function playHighPitchSound() {
@@ -89,24 +141,20 @@
 			oscillator = audioContext.createOscillator();
 			const gainNode = audioContext.createGain();
 
-			oscillator.type = 'square'; // Harsh sound
-			oscillator.frequency.setValueAtTime(3000, audioContext.currentTime); // High pitch (3kHz)
+			oscillator.type = 'square';
+			oscillator.frequency.setValueAtTime(3000, audioContext.currentTime);
 			
-			// Oscillate frequency for alarm effect
 			oscillator.frequency.exponentialRampToValueAtTime(4000, audioContext.currentTime + 0.1);
 			oscillator.frequency.exponentialRampToValueAtTime(3000, audioContext.currentTime + 0.2);
 
-			gainNode.gain.setValueAtTime(1, audioContext.currentTime); // Max volume
+			gainNode.gain.setValueAtTime(1, audioContext.currentTime); 
 
 			oscillator.connect(gainNode);
 			gainNode.connect(audioContext.destination);
 
 			oscillator.start();
 			
-			// Loop the alarm effect manually or use an LFO if needed, 
-			// but simple continuous tone is annoying enough.
-			// Let's make it pulse
-			setInterval(() => {
+			pulseInterval = setInterval(() => {
 				if (oscillator && audioContext) {
 					const now = audioContext.currentTime;
 					oscillator.frequency.setValueAtTime(3000, now);
@@ -114,13 +162,21 @@
 				}
 			}, 200);
 
+			beepTimeout = setTimeout(() => {
+				stopOscillator();
+				playEmergencyAudio();
+			}, 8000);
+
 		} catch (e) {
 			console.error("Audio error", e);
 		}
 	}
 
-	function stopAlarm() {
-		isAlarmActive = false;
+	function stopOscillator() {
+		if (pulseInterval) {
+			clearInterval(pulseInterval);
+			pulseInterval = null;
+		}
 		if (oscillator) {
 			try {
 				oscillator.stop();
@@ -134,6 +190,41 @@
 			} catch (e) {}
 			audioContext = null;
 		}
+	}
+
+	function playEmergencyAudio() {
+		if (emergencyAudio) return;
+
+		playCount = 0;
+		emergencyAudio = new Audio('/emergency_guide.wav');
+		
+		emergencyAudio.addEventListener('ended', () => {
+			playCount++;
+			if (playCount < 3) {
+				emergencyAudio.currentTime = 0;
+				emergencyAudio.play();
+			} else {
+				emergencyAudio = null;
+			}
+		});
+
+		emergencyAudio.play().catch(e => console.error("Play failed", e));
+	}
+
+	function stopAlarm() {
+		isAlarmActive = false;
+		
+		if (beepTimeout) {
+			clearTimeout(beepTimeout);
+			beepTimeout = null;
+		}
+		stopOscillator();
+
+		if (emergencyAudio) {
+			emergencyAudio.pause();
+			emergencyAudio = null;
+		}
+		playCount = 0;
 	}
 </script>
 
