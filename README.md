@@ -19,14 +19,22 @@ In high-stress emergencies, unlocking a phone and dialing numbers is often too s
 - **Location Tracking:** Captures and logs GPS coordinates during active alerts.
 - **Dock/Premium Modes:** specialized monitoring modes for stationary or on-the-go scenarios.
 
+## 2.1.1 AI Agent Workflow
+  <img width="1024" height="523" alt="{94EDAED1-A28E-496C-869D-FD42DB9CE855}" src="https://github.com/user-attachments/assets/5fba2335-2639-4c74-9c3d-b72753d9fa6b" />
+
+
 ## 3. Technical Architecture & Stack
 *Compliance Reference: Rule 7 (Technical Guidelines) & Rule 8 (Plagiarism & Honesty)*
+
 
 This project is built using:
 - **Frontend/UI:** SvelteKit (Svelte 5)
 - **Native Bridge:** CapacitorJS (Android)
 - **AI/ML Model:** Google MediaPipe Pose (Pre-trained) - *Used for posture analysis.*
 - **State Management:** Svelte Stores
+
+<img width="1280" height="345" alt="image" src="https://github.com/user-attachments/assets/531ddb5e-86e4-4b4a-93ea-bc94b917c854" />
+
 
 **Third-Party Libraries & Plugins:**
 - `@capacitor/core`, `@capacitor/android`
