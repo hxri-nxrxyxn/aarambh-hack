@@ -23,6 +23,11 @@
 				<span class="label">LAUNCH_DOCK_MONITOR</span>
 				<span class="arrow">→</span>
 			</a>
+
+			<a href="/premium" class="btn btn-primary">
+				<span class="label">LAUNCH_PREMIUM_MONITOR</span>
+				<span class="arrow">→</span>
+			</a>
 			
 			<a href="/otg" class="btn btn-secondary">
 				<span class="label">OPEN_OTG_TOOLS</span>
