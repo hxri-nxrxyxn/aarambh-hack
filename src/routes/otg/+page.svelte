@@ -4,7 +4,7 @@
 	import { VolumeControl, VolumeType } from '@odion-cloud/capacitor-volume-control';
 	import { Geolocation } from '@capacitor/geolocation';
 
-	const WEBHOOK_URL = "http://fahim-n8n.laddu.cc/webhook/seizure-monitor";
+	const WEBHOOK_URL = "http://fahim-n8n.laddu.cc/webhook/telegram-publish";
 
 	let sensorData = $state({
 		accel: { x: 0, y: 0, z: 0 },

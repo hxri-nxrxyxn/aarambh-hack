@@ -1,38 +1,91 @@
-# sv
+# HELPOSZ - Emergency Assistance & Monitoring System
+### Aarambh 3.0 Hackathon Submission
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+> **DISCLAIMER: HACKATHON PROTOTYPE**
+> This application is a prototype developed for the Aarambh 3.0 Hackathon. It is **NOT** certified for real-world medical, legal, or emergency use. It relies on consumer-grade hardware sensors and assumes human oversight.
+> *Compliance Reference: Rule 6 (Safety, Responsibility & Disclaimers)*
 
-## Creating a project
+---
 
-If you're seeing this, you've probably already done this step. Congrats!
+## 1. Project Overview & Problem Statement
+**Helposz** is a mobile-first emergency response and monitoring application designed to assist users in critical situations. It leverages native device capabilities (sensors, camera, volume buttons) to provide low-friction trigger mechanisms for distress signals and fall detection.
 
-```sh
-# create a new project in the current directory
-npx sv create
+**Problem Addressed:** 
+In high-stress emergencies, unlocking a phone and dialing numbers is often too slow or impossible. Helposz solves this by using "always-available" hardware triggers (like volume buttons) and background monitoring (posture detection) to initiate alerts.
 
-# create a new project in my-app
-npx sv create my-app
-```
+## 2. Key Features (System Workflow)
+- **Hardware Trigger:** Activates emergency protocols via volume button sequences (bypassing the need to look at the screen).
+- **Fall/Posture Detection:** Uses `MediaPipe Pose` (pre-trained model) to analyze camera feed for fall detection or specific distress postures.
+- **Location Tracking:** Captures and logs GPS coordinates during active alerts.
+- **Dock/Premium Modes:** specialized monitoring modes for stationary or on-the-go scenarios.
 
-## Developing
+## 3. Technical Architecture & Stack
+*Compliance Reference: Rule 7 (Technical Guidelines) & Rule 8 (Plagiarism & Honesty)*
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+This project is built using:
+- **Frontend/UI:** SvelteKit (Svelte 5)
+- **Native Bridge:** CapacitorJS (Android)
+- **AI/ML Model:** Google MediaPipe Pose (Pre-trained) - *Used for posture analysis.*
+- **State Management:** Svelte Stores
 
-```sh
-npm run dev
+**Third-Party Libraries & Plugins:**
+- `@capacitor/core`, `@capacitor/android`
+- `@capacitor/status-bar` (UI immersion)
+- `@capacitor/geolocation` (Location services)
+- `@capacitor-community/keep-awake` (Prevent sleep during monitoring)
+- `@odion-cloud/capacitor-volume-control` (Hardware trigger interface)
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+## 4. Setup & Installation
+*Compliance Reference: Rule 10 (Submission Requirements)*
 
-## Building
+### Prerequisites
+- Node.js (v18+)
+- Android Studio (for native build)
+- Android Device (recommended for full sensor testing)
 
-To create a production version of your app:
+### Installation Steps
+1. **Clone the repository:**
+   ```bash
+   git clone <repository_url>
+   cd helposz
+   ```
 
-```sh
-npm run build
-```
+2. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
 
-You can preview the production build with `npm run preview`.
+3. **Development (Browser Mode):**
+   *Note: Native features like volume triggers will not work in the browser.*
+   ```bash
+   npm run dev
+   ```
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+4. **Build & Sync for Android:**
+   ```bash
+   npm run build
+   npx cap sync
+   ```
+
+5. **Run on Device:**
+   ```bash
+   npx cap open android
+   # Run the app from Android Studio onto your connected device
+   ```
+
+## 5. Usage Guide (Demo Instructions)
+1. **Launch App:** Grant necessary permissions (Camera, Location).
+2. **Select Mode:** Choose "Dock Monitor" or "Premium Monitor" from the home screen.
+3. **Trigger:** 
+   - *Hardware:* Press Volume buttons as configured.
+   - *Visual:* Visual cues will indicate active monitoring state.
+
+## 6. Ethical Data Usage & Privacy
+*Compliance Reference: Rule 5 (Data Usage)*
+- **Local Processing:** Video feeds for posture detection are processed locally on the device. No video stream is sent to the cloud.
+- **No PII:** The app does not collect personally identifiable information beyond temporary location data used strictly for the emergency function.
+
+---
+
+**Developed for Aarambh 3.0**
+*Built with integrity and responsible innovation.*

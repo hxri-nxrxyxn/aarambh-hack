@@ -34,6 +34,10 @@
 				<span class="arrow">→</span>
 			</a>
 		</div>
+
+		<footer class="disclaimer">
+			<p>DISCLAIMER: HACKATHON_PROTOTYPE. NOT_FOR_REAL_WORLD_DEPLOYMENT. HUMAN_OVERSIGHT_REQUIRED.</p>
+		</footer>
 	</main>
 </div>
 
@@ -132,5 +136,19 @@
 
 	.arrow {
 		font-weight: 300;
+	}
+
+	.disclaimer {
+		margin-top: 40px;
+		padding: 10px;
+		border-top: 1px solid #F0F0F0;
+		text-align: center;
+	}
+
+	.disclaimer p {
+		font-size: 0.6rem;
+		color: #AAA;
+		margin: 0;
+		letter-spacing: 0.5px;
 	}
 </style>
